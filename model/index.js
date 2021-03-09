@@ -1,84 +1,32 @@
-const fs = require("fs");
-const { promises: fsPromises } = fs;
-const path = require("path");
-const { nanoid } = require("nanoid");
-
-const contactsPath = path.join(__dirname, "contacts.json");
-
-const contactList = fs.readFileSync(contactsPath, "utf-8");
-
-const contactsItems = JSON.parse(contactList);
+const Contact = require("../schemas/contact");
 
 const listContacts = async () => {
-  return contactsItems;
+  return Contact.find();
 };
 
 const getContactById = async (contactId) => {
-  const contactById = await contactsItems.find((el) => el.id === contactId);
-  return contactById;
+  return Contact.findOne({ _id: contactId });
 };
 
 const removeContact = async (contactId) => {
-  const newContacts = contactsItems.filter((el) => el.id !== contactId);
-  fsPromises.writeFile(
-    contactsPath,
-    JSON.stringify(newContacts),
-    "utf-8",
-    (err) => {
-      if (err) {
-        return console.log(err);
-      }
-    }
-  );
-  return newContacts;
+  return Contact.findByIdAndRemove({ _id: contactId });
 };
 
 const addContact = async (body) => {
-  const { name, email, phone } = await body;
-  const newContact = {
-    id: nanoid(),
+  const { name, email, phone, subscription, password, token } = await body;
+  const contact = await Contact.create({
     name,
     email,
     phone,
-  };
-
-  const newContactsList = [...contactsItems, newContact];
-  fsPromises.writeFile(
-    contactsPath,
-    JSON.stringify(newContactsList),
-    "utf-8",
-    (err) => {
-      if (err) {
-        return console.log(err);
-      }
-    }
-  );
-
-  return newContact;
+    subscription,
+    password,
+    token,
+  });
+  return contact;
 };
 
 const updateContact = async (contactId, body) => {
-  const { name, email, phone } = await body;
-  const contacts = await contactsItems.find((el) => {
-    const { id } = el;
-    if (id === contactId) {
-      el.name = name;
-      el.email = email;
-      el.phone = phone;
-      return el;
-    }
-  });
-  fsPromises.writeFile(
-    contactsPath,
-    JSON.stringify(contactsItems),
-    "utf-8",
-    (err) => {
-      if (err) {
-        return console.log(err);
-      }
-    }
-  );
-  return contacts;
+  return Contact.findByIdAndUpdate({ _id: contactId }, body, { new: true });
 };
 
 module.exports = {

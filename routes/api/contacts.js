@@ -1,7 +1,5 @@
 const express = require("express");
-const path = require("path");
-const fs = require("fs");
-
+const router = express.Router();
 const {
   listContacts,
   getContactById,
@@ -9,76 +7,78 @@ const {
   removeContact,
   updateContact,
 } = require("../../model/index");
-const router = express.Router();
-
-const contactsPath = path.join(__dirname, "../../model/contacts.json");
-
-const contactList = fs.readFileSync(contactsPath, "utf-8");
-
-const contactsItems = JSON.parse(contactList);
 
 router.get("/", async (req, res, next) => {
-  const contacts = await listContacts();
-  res.json({
-    status: "success",
-    code: 200,
-    data: {
-      contacts,
-    },
-  });
+  try {
+    const data = await listContacts();
+    res.json({
+      status: "success",
+      code: 200,
+      data: { data },
+    });
+  } catch (err) {
+    console.log(err.message);
+    next(err);
+  }
 });
 
 router.get("/:contactId", async (req, res, next) => {
-  const { contactId } = await req.params;
-  const contact = await getContactById(Number(contactId));
-  res.json({
-    status: "success",
-    code: 200,
-    data: { contact },
-  });
-  if (!contact) {
-    return res.status(404).json({ message: "Not found" });
+  try {
+    const id = req.params.contactId;
+    const data = await getContactById(id);
+    res.json({
+      status: "success",
+      code: 200,
+      data: { data },
+    });
+  } catch (err) {
+    console.log(err.message);
+    next(err);
   }
 });
 
 router.post("/", async (req, res, next) => {
-  const contact = await addContact(req.body);
-  const { name, email, phone } = req.body;
-  if (!name || !email || !phone) {
-    return res.status(400).json({ message: "missing required name field" });
+  try {
+    const body = req.body;
+    const contact = await addContact(req.body);
+    res.status(201).json({
+      status: "success",
+      code: 201,
+      data: { body },
+    });
+  } catch (err) {
+    console.log(err.message);
+    next(err);
   }
-  res.status(201).json({
-    status: "success",
-    code: 201,
-    data: { contact },
-  });
 });
 
 router.delete("/:contactId", async (req, res, next) => {
-  const { contactId } = await req.params;
-  const contacts = removeContact(Number(contactId));
-  res.json({
-    status: "success",
-    code: 200,
-    data: { message: "contact deleted" },
-  });
-  if (contacts.length === contactsItems.length) {
-    return res.status(404).json({ message: "Not found" });
+  try {
+    const contact = await removeContact(req.params.contactId);
+    res.json({
+      status: "success",
+      code: 200,
+      data: { message: "contact deleted" },
+    });
+  } catch (err) {
+    console.log(err.message);
+    next(err);
   }
 });
 
 router.patch("/:contactId", async (req, res, next) => {
-  const { contactId } = await req.params;
-  const body = req.body;
-  const contact = await updateContact(Number(contactId), body);
-  if (!contact) {
-    return res.status(404).json({ message: "Not found" });
+  try {
+    const update = await updateContact(req.params.contactId, req.body);
+    console.log(update);
+    res.json({
+      status: "success",
+      code: 200,
+      data: { update },
+    });
+  } catch (err) {
+    console.log(err.message);
+    next(err);
   }
-  res.json({
-    status: "success",
-    code: 200,
-    data: { message: "contact updated" },
-  });
 });
 
 module.exports = router;
